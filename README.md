@@ -48,11 +48,11 @@
 
 ### Server urls
 
-- http://127.0.0.1:8000/super-admin/
+<!-- - http://127.0.0.1:8000/super-admin/ -->
 
-- http://127.0.0.1:8000/apis/
+- http://127.0.0.1:8000/api/
 
-- http://127.0.0.1:8000/api-docs/
+<!-- - http://127.0.0.1:8000/api-docs/ -->
 
 
 
