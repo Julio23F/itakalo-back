@@ -1,0 +1,6 @@
+SERVER_FILES_PATH=../../Aligneur_server_V2/files/
+EXTRACT_FILES_TO=../input_data/
+SPLITTED_DATA_DIR=../splitted_data/
+EXPORT_DATA_DIR=../export_folder/
+PYTHON_OPTIMIZING_FILE=../main.py
+OPTIMIZED_DATA_DIR=../optimized_data/
