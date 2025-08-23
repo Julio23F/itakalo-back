@@ -27,12 +27,6 @@ class Member(models.Model):
 
     expo_push_token = models.CharField(max_length=255, blank=True, null=True)
     
-    followers = models.ManyToManyField(
-        'self',
-        symmetrical=False,
-        related_name='following',
-        blank=True
-    )
 
     class Meta:
         managed = True

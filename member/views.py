@@ -167,51 +167,7 @@ class FollowingListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
       
       
-class FollowersListView(APIView):
-    permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        user = request.user
-        followers = user.followers.all()
-        serializer = MemberSerializer(followers, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-      
-
-class AddFollowersAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    
-    def post(self, request, format=None):
-        current_user = request.user 
-        member_ids = request.data.get("member_ids", [])
-
-        if not isinstance(member_ids, list):
-            return Response({'error': 'member_ids doit être une liste.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        new_followers = []
-
-        for member_id in member_ids:
-            try:
-                member = Member.objects.get(pk=member_id)
-                if member != current_user:
-                    # On ajoute l'utilisateur connecté dans la liste "following" de ces membres
-                    member.following.add(current_user)
-                    new_followers.append({
-                        'id': member.id,
-                        'email': member.email,
-                        'first_name': member.first_name,
-                        'last_name': member.last_name
-                    })
-            except Member.DoesNotExist:
-                continue
-
-        return Response({
-            'message': f'{len(new_followers)} membres vous suivent maintenant.',
-            'followers': new_followers
-        }, status=status.HTTP_200_OK)
-        
-        
-        
 class SaveExpoTokenView(APIView):
     permission_classes = [IsAuthenticated]
 
