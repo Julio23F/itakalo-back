@@ -78,6 +78,22 @@ class CustomLogin(APIView):
       token = jwt_encode_handler(payload)
       return Response({'token': token, 'member': payload})
 
+
+    def get_client_ip(self, request):
+      # Priorité 1 : Cloudflare
+      ip = request.META.get('HTTP_CF_CONNECTING_IP')
+      if ip:
+          return ip
+
+      # Priorité 2 : X-Forwarded-For
+      x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+      if x_forwarded_for:
+          return x_forwarded_for.split(',')[0].strip()
+
+      # Sinon : REMOTE_ADDR
+      return request.META.get('REMOTE_ADDR')
+
+
     @swagger_auto_schema(
         request_body=LoginSerializer(many=False),
         responses={200: MemberSerializer(many=False)}
@@ -87,7 +103,12 @@ class CustomLogin(APIView):
         data=request.data,
         context={'request': request}
       )
+      ip = request.META.get('REMOTE_ADDR')
+      client_ip = self.get_client_ip(request)
+      print(f"📌 Client IP: {client_ip}")
+      
       print(f"request ***************** {request.data}")
+      print(f"ip ***************** {ip}")
       
       serializer.is_valid(raise_exception=True)
       member = None
