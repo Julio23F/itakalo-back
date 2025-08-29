@@ -91,3 +91,27 @@ class ProductCreate(APIView):
 
 
 
+class ToggleLikeProductView(APIView):
+    """
+    Permet à un membre de liker ou déliker un produit.
+    """
+    def post(self, request, product_id):
+        member_id = request.user.id
+        if not member_id:
+            return Response({"error": "Member ID requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        member = get_object_or_404(Member, id=member_id)
+        product = get_object_or_404(Product, id=product_id)
+
+        if member in product.likes.all():
+            product.likes.remove(member)
+            action = "removed"
+        else:
+            product.likes.add(member)
+            action = "added"
+
+        return Response({
+            "product_id": product.id,
+            "total_likes": product.likes.count(),
+            "action": action
+        }, status=status.HTTP_200_OK)
