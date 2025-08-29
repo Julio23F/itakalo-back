@@ -20,7 +20,9 @@ from .serializers import (
 # from rest_framework.permissions import IsAuthenticated
 from authentication.custom_permissions import IsAuthenticated
 
-# from utils.email_utils import send_email_Product_password
+import uuid
+from django.conf import settings
+
 
 class ProductList(APIView):
   permission_classes = []
@@ -73,22 +75,62 @@ class ProductDetail(APIView):
     return Response(status=status.HTTP_200_OK)
 
 
-class ProductCreate(APIView):
-    permission_classes = [IsAuthenticated]
+# class ProductCreate(APIView):
+#     permission_classes = []
 
+
+#     def post(self, request):
+#         author_id = request.user.id
+#         print(f"author_id {author_id}")
+#         if not author_id:
+#             return Response({"error": "L'auteur est requis."}, status=status.HTTP_400_BAD_REQUEST)
+#         author = get_object_or_404(Member, id=author_id)
+
+#         serializer = ProductSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(author=author)  
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+class ProductCreate(APIView):
+    """
+    API pour créer un produit avec upload image vers Supabase
+    """
 
     def post(self, request):
-        author_id = request.user.id
+        author_id = request.data.get('author')
         if not author_id:
             return Response({"error": "L'auteur est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
         author = get_object_or_404(Member, id=author_id)
 
-        serializer = ProductSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(author=author)  
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        image_file = request.FILES.get('image')
+        image_url = None
 
+        if image_file:
+            filename = f"{uuid.uuid4()}_{image_file.name}"
+            try:
+                settings.SUPABASE.storage.from_("product_images").upload(filename, image_file.read())
+
+                image_url = settings.SUPABASE.storage.from_("product_images").get_public_url(filename)
+            except Exception as e:
+                return Response({"error": "Échec upload Supabase", "details": str(e)}, status=500)
+
+        data = request.data.copy()
+
+        if image_url:
+            data['image'] = image_url
+
+        serializer = ProductSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(author=author)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ToggleLikeProductView(APIView):
