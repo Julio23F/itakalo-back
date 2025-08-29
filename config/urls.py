@@ -23,4 +23,10 @@ urlpatterns = [
     
     # Authentication
     path('api/v1/auth/', include('authentication.urls')),
+
+    # Member
+    path('api/v1/members/', include('member.urls')),
+
+    # Products
+    path('api/v1/products/', include('products.urls')),
 ]
