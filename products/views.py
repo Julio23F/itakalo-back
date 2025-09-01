@@ -102,7 +102,7 @@ class ProductCreate(APIView):
     """
 
     def post(self, request):
-        author_id = request.data.get('author')
+        author_id = request.user.id
         if not author_id:
             return Response({"error": "L'auteur est requis."}, status=status.HTTP_400_BAD_REQUEST)
 
