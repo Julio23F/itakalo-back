@@ -21,6 +21,8 @@ from authentication.custom_permissions import IsAuthenticated
 
 from utils.member_utils import generate_password, generate_api_key
 # from utils.email_utils import send_email_member_password
+import uuid
+from django.conf import settings
 
 class MemberList(APIView):
   permission_classes = []
@@ -80,6 +82,8 @@ class MemberDetail(APIView):
     image_file = request.FILES.get('image')
     image_url = None
 
+    print(f"image_file: {image_file}")
+
     if image_file:
         filename = f"{uuid.uuid4()}_{image_file.name}"
         try:
@@ -92,10 +96,10 @@ class MemberDetail(APIView):
     data = request.data.copy()
 
     if image_url:
-        data['image'] = image_url
+        data['image'] = "https://pynqduobepawjiwemgbm.supabase.co/storage/v1/object/public/profil_users/8159e87b-69bd-45fb-b7ee-1ddc0c9d22de_teeth.png"
 
 
-
+    print(f"image_url: {image_url}")
     serializer = MemberSerializer(item, data=request.data)
     if serializer.is_valid():
       serializer.save()

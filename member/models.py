@@ -11,7 +11,8 @@ class Member(models.Model):
         (ADMIN, ADMIN),
         (USER, USER),
     )
-    image = models.URLField(blank=True, null=True)
+    # image = models.URLField(blank=True, null=True)
+    image = models.TextField(blank=True, null=True)
     email = models.CharField(max_length=60, blank=False)
     type = models.CharField(choices=MEMBER_TYPE, max_length=15, blank=False)
     first_name = models.CharField(max_length=128, blank=False)
@@ -24,9 +25,6 @@ class Member(models.Model):
     is_valid_email = models.BooleanField(blank=True, default=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    expo_push_token = models.CharField(max_length=255, blank=True, null=True)
-    
 
     class Meta:
         managed = True
