@@ -13,6 +13,7 @@ class Member(models.Model):
     )
     # image = models.URLField(blank=True, null=True)
     image = models.TextField(blank=True, null=True)
+
     email = models.CharField(max_length=60, blank=False)
     type = models.CharField(choices=MEMBER_TYPE, max_length=15, blank=False)
     first_name = models.CharField(max_length=128, blank=False)

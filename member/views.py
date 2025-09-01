@@ -13,7 +13,6 @@ from utils.pagination_utils import (
 from .models import Member
 from .serializers import (
   MemberSerializer,
-  FollowingMemberSerializer
 )
 
 # from rest_framework.permissions import IsAuthenticated
@@ -91,12 +90,11 @@ class MemberDetail(APIView):
 
       data = request.data.copy()
 
-      if image_url:
-          data['image'] = image_url
-      print(f"image_url: {image_url}")
 
-      
-    serializer = MemberSerializer(item, data=request.data)
+      if image_url:
+        clean_url = image_url
+
+    serializer = MemberSerializer(item, data=data)
     if serializer.is_valid():
       serializer.save()
       return Response(serializer.data, status=status.HTTP_200_OK)
