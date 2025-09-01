@@ -10,10 +10,26 @@ class Product(models.Model):
         (DONATION, DONATION),
         (SALE, SALE),
     )
+    T_SHIRT = 'T_SHIRT'
+    PANTALON = 'PANTALON'
+    ROBE = 'ROBE'
+    CHAUSSURE = 'CHAUSSURE'
+    VESTE = 'VESTE'
+    PRODUCT_CATEGORY = (
+        (T_SHIRT, T_SHIRT),
+        (PANTALON, PANTALON),
+        (ROBE, ROBE),
+        (CHAUSSURE, CHAUSSURE),
+        (VESTE, VESTE)
+    )
 
     title = models.CharField(max_length=128, blank=False)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    adresse = models.CharField(max_length=255, blank=True, null=True)
+
     image = models.URLField(blank=True, null=True)
     type = models.CharField(choices=PRODUCT_TYPE, max_length=15, blank=False)
+    category = models.CharField(choices=PRODUCT_CATEGORY, max_length=15, blank=False)
     description = models.CharField(max_length=128, blank=False)
 
     author = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='products')

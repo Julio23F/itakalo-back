@@ -11,7 +11,7 @@ class Member(models.Model):
         (ADMIN, ADMIN),
         (USER, USER),
     )
-    image = S3DirectField(dest='member_images', blank=True)
+    image = models.URLField(blank=True, null=True)
     email = models.CharField(max_length=60, blank=False)
     type = models.CharField(choices=MEMBER_TYPE, max_length=15, blank=False)
     first_name = models.CharField(max_length=128, blank=False)
@@ -45,15 +45,10 @@ class Member(models.Model):
         return res
 
     def image_tag(self):
-        res = None
         if self.image:
-            res = mark_safe('<img src="{src}" width="{width}" />'
-            .format(
-                src=self.image if self.image else '',
-                width=80,
-                height='auto'
-            ))
-        return res
+            return mark_safe(f'<img src="{self.image}" width="80" height="auto" />')
+        return None
+        
 
     def full_name(self):
         res = ''

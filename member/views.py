@@ -76,6 +76,26 @@ class MemberDetail(APIView):
   # )
   def put(self, request, pk, format=None):
     item = self.get_object(pk)
+
+    image_file = request.FILES.get('image')
+    image_url = None
+
+    if image_file:
+        filename = f"{uuid.uuid4()}_{image_file.name}"
+        try:
+            settings.SUPABASE.storage.from_("profil_users").upload(filename, image_file.read())
+
+            image_url = settings.SUPABASE.storage.from_("profil_users").get_public_url(filename)
+        except Exception as e:
+            return Response({"error": "Échec upload Supabase", "details": str(e)}, status=500)
+
+    data = request.data.copy()
+
+    if image_url:
+        data['image'] = image_url
+
+
+
     serializer = MemberSerializer(item, data=request.data)
     if serializer.is_valid():
       serializer.save()
