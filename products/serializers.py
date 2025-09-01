@@ -12,6 +12,8 @@ class ProductSerializer(serializers.ModelSerializer):
       'title', 
       'image', 
       'type', 
+      'price',
+      'category',
       'description', 
       'author', 
       'likes', 
