@@ -125,19 +125,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
     # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    #     'NAME': env('DATABASE_NAME', default='itakaloDB'),
-    #     'USER': env('DATABASE_USER_NAME', default='postgres'),
-    #     'PASSWORD': env('DATABASE_PASSWORD', default='0523faralahy02'),
-    #     'HOST': env('DATABASE_HOST', default='localhost'),
-    #     'PORT': env('DATABASE_PORT', default='5432'),
-    #     'ATOMIC_REQUESTS': True,
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
     # }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': env('DATABASE_NAME'),
+        'USER': env('DATABASE_USER_NAME'),
+        'PASSWORD': env('DATABASE_PASSWORD'),
+        'HOST': env('DATABASE_HOST'),
+        'PORT': env('DATABASE_PORT'),
+        'ATOMIC_REQUESTS': True,
+    }
 }
 
 

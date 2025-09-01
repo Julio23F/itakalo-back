@@ -72,34 +72,30 @@ class MemberDetail(APIView):
     serializer = MemberSerializer(item)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-  # @swagger_auto_schema(
-  #   request_body=MemberSerializer(many=False),
-  #   responses={200: MemberSerializer(many=False)}
-  # )
+
   def put(self, request, pk, format=None):
     item = self.get_object(pk)
-
     image_file = request.FILES.get('image')
-    image_url = None
-
-    print(f"image_file: {image_file}")
 
     if image_file:
-        filename = f"{uuid.uuid4()}_{image_file.name}"
-        try:
-            settings.SUPABASE.storage.from_("profil_users").upload(filename, image_file.read())
+      image_url = None
 
-            image_url = settings.SUPABASE.storage.from_("profil_users").get_public_url(filename)
-        except Exception as e:
-            return Response({"error": "Échec upload Supabase", "details": str(e)}, status=500)
+      if image_file:
+          filename = f"{uuid.uuid4()}_{image_file.name}"
+          try:
+              settings.SUPABASE.storage.from_("profil_users").upload(filename, image_file.read())
 
-    data = request.data.copy()
+              image_url = settings.SUPABASE.storage.from_("profil_users").get_public_url(filename)
+          except Exception as e:
+              return Response({"error": "Échec upload Supabase", "details": str(e)}, status=500)
 
-    if image_url:
-        data['image'] = "https://pynqduobepawjiwemgbm.supabase.co/storage/v1/object/public/profil_users/8159e87b-69bd-45fb-b7ee-1ddc0c9d22de_teeth.png"
+      data = request.data.copy()
 
+      if image_url:
+          data['image'] = image_url
+      print(f"image_url: {image_url}")
 
-    print(f"image_url: {image_url}")
+      
     serializer = MemberSerializer(item, data=request.data)
     if serializer.is_valid():
       serializer.save()

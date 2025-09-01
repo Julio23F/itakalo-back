@@ -24,12 +24,12 @@ class Product(models.Model):
     )
 
     title = models.CharField(max_length=128, blank=False)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     adresse = models.CharField(max_length=255, blank=True, null=True)
 
     image = models.URLField(blank=True, null=True)
     type = models.CharField(choices=PRODUCT_TYPE, max_length=15, blank=False)
-    category = models.CharField(choices=PRODUCT_CATEGORY, max_length=15, blank=False)
+    category = models.CharField(choices=PRODUCT_CATEGORY, max_length=15, blank=False, default='DONATION')
     description = models.CharField(max_length=128, blank=False)
 
     author = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='products')
