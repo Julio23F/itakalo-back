@@ -35,6 +35,8 @@ class Product(models.Model):
     author = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='products')
 
     likes = models.ManyToManyField(Member, related_name='liked_products', blank=True)
+    
+    adresse = models.CharField(max_length=128, blank=True, null=True)
 
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)

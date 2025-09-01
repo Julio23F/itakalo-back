@@ -15,6 +15,7 @@ class ProductSerializer(serializers.ModelSerializer):
       'description', 
       'author', 
       'likes', 
+      'adresse',
       'created_at', 
       'updated_at'
     )
