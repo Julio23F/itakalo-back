@@ -92,7 +92,8 @@ class MemberDetail(APIView):
 
 
       if image_url:
-        clean_url = image_url
+        # clean_url = image_url
+        data['image'] = image_url
 
     serializer = MemberSerializer(item, data=data)
     if serializer.is_valid():
