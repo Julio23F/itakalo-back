@@ -29,4 +29,7 @@ urlpatterns = [
 
     # Products
     path('api/v1/products/', include('products.urls')),
+
+    path('chat/', include('chat.urls')),
+
 ]

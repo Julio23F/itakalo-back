@@ -59,7 +59,8 @@ THIRD_PARTY_APPS=[
 LOCAL_APPS = [
     'authentication',
     'member',
-    'products'
+    'products',
+    'chat'
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS + THIRD_PARTY_APPS
