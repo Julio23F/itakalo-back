@@ -16,6 +16,7 @@ WORKDIR /app
 COPY . /app
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+RUN pip install supabase
 
 # Commande à exécuter au démarrage
 # CMD ["gunicorn", "--bind", "0.0.0.0:8000", "itrasy.wsgi:application"]
