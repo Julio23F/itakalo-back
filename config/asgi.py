@@ -9,7 +9,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 import chat.routing
-
+# from chat.middleware import JWTAuthMiddlewareStack
 
 from channels.security.websocket import AllowedHostsOriginValidator
 from channels.routing import ProtocolTypeRouter, URLRouter
@@ -22,5 +22,7 @@ application = ProtocolTypeRouter({
             chat.routing.websocket_urlpatterns
         )
     ),
+
+    # "websocket": JWTAuthMiddlewareStack(URLRouter(chat.routing.websocket_urlpatterns)),
 
 })

@@ -1,16 +1,45 @@
 from django.db import models
-# from django.contrib.auth.models import User
-from member.models import Member
+from member.models import Member  # Importer ton modèle Member
 
 class Conversation(models.Model):
-    participants = models.ManyToManyField(Member, related_name="conversations")
+    participants = models.ManyToManyField(
+        Member, related_name="conversations"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        # Affiche les noms ou emails des participants
+        participants = self.participants.all()
+        return f"Conversation entre {', '.join([str(p) for p in participants])}"
+
+    def get_last_message(self):
+        return self.messages.order_by("-timestamp").first()
+
 
 class Message(models.Model):
-    conversation = models.ForeignKey(Conversation, related_name="messages", on_delete=models.CASCADE)
-    sender = models.ForeignKey(Member, on_delete=models.CASCADE)
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name="messages"
+    )
+    sender = models.ForeignKey(
+        Member, on_delete=models.CASCADE, related_name="sent_messages"
+    )
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["timestamp"]
+
+    def __str__(self):
+        return (
+            f"Message de {self.sender} le {self.timestamp.strftime('%d/%m/%Y %H:%M')}"
+        )
+
+    def mark_as_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.save()
