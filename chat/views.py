@@ -47,24 +47,24 @@ class GetOrCreateConversationByUserView(generics.RetrieveAPIView):
         # Récupérer l'ID de l'autre utilisateur depuis les paramètres
         other_user_id = self.kwargs["user_id"]
         current_user = self.request.user
-        print("///////////////////////////////")
+
         # Recherche d'une conversation où les deux utilisateurs sont participants
         conversations = (
-            Conversation.objects.filter(participants=current_user.id)
+            Conversation.objects.filter(participants=current_user)
             .filter(participants=other_user_id)
             .distinct()
         )
-        print("**********************************")
+        print(f"current_user {current_user}")
+        print(f"other_user_id {other_user_id}")
+        
         # Si une conversation existe, la retourner
         if conversations.exists():
             return conversations.first()
-        print("----------------------------------")
 
         # Sinon, créer une nouvelle conversation
         conversation = Conversation.objects.create()
         conversation.participants.add(current_user.id, other_user_id)
         conversation.save()
-        print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-")
 
         return conversation
 

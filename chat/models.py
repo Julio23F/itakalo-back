@@ -1,5 +1,9 @@
+from django.conf import settings
 from django.db import models
-from member.models import Member  # Importer ton modèle Member
+
+# Create your models here.
+from member.models import Member
+
 
 class Conversation(models.Model):
     participants = models.ManyToManyField(
@@ -12,7 +16,7 @@ class Conversation(models.Model):
         ordering = ["-updated_at"]
 
     def __str__(self):
-        # Affiche les noms ou emails des participants
+        # Affiche les emails des participants
         participants = self.participants.all()
         return f"Conversation entre {', '.join([str(p) for p in participants])}"
 

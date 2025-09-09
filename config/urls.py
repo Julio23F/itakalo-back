@@ -30,6 +30,6 @@ urlpatterns = [
     # Products
     path('api/v1/products/', include('products.urls')),
 
-    path('api/v1/chat/', include('chat.urls')),
+    path('api/chat/', include('chat.urls')),
 
 ]
