@@ -9,16 +9,19 @@ from django.contrib.auth.models import AnonymousUser
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        # self.notification_group_name = None 
         self.user = self.scope["user"]
 
         # Rejeter la connexion si l'utilisateur n'est pas authentifié
         # if self.user.is_anonymous:
         #     await self.close(code=4001)
         #     return
-        if isinstance(self.user, AnonymousUser) or not getattr(self.user, "is_authenticated", False):
-            await self.close(code=4001)
-            return
+        print(f"[DEBUG] user id Notification_DEBUG: {self.user.id}")
 
+        # if isinstance(self.user, AnonymousUser) or not getattr(self.user, "is_authenticated", False):
+        #     await self.close(code=4001)
+        #     return
+        print(f"[DEBUG] user id Notification_DEBUG: {self.user.id}")
         # Créer un groupe de notification unique pour cet utilisateur
         self.notification_group_name = f"notifications_{self.user.id}"
 
@@ -29,11 +32,17 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+    # async def disconnect(self, close_code):
+    #     # Quitter le groupe de notification
+    #     await self.channel_layer.group_discard(
+    #         self.notification_group_name, self.channel_name
+    #     )
     async def disconnect(self, close_code):
-        # Quitter le groupe de notification
-        await self.channel_layer.group_discard(
-            self.notification_group_name, self.channel_name
-        )
+        if hasattr(self, "notification_group_name"):
+            await self.channel_layer.group_discard(
+                self.notification_group_name, self.channel_name
+            )
+
 
     async def new_message_notification(self, event):
         """Envoyer une notification de nouveau message au client"""
