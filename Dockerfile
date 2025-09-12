@@ -19,6 +19,6 @@ RUN pip install -r requirements.txt
 RUN pip install supabase
 
 # Commande à exécuter au démarrage
-# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "itrasy.wsgi:application"]
-# CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
-CMD ["/bin/bash", "-c", "python manage.py migrate && gunicorn config.wsgi"]
+#CMD ["/bin/bash", "-c", "python manage.py migrate && gunicorn config.wsgi"]
+# CMD ["/bin/bash", "-c", "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 config.asgi:application"]
+CMD ["/bin/bash", "-c", "python manage.py migrate && daphne config.asgi:application"]
