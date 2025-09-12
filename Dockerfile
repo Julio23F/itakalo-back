@@ -16,21 +16,19 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Répertoire de travail
 WORKDIR /app
 
-# Copier requirements + installer dépendances
+# Installer Python dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt && pip install supabase
 
-# Copier code
+# Copier le code
 COPY . /app
 
-# Config Nginx
+# Copier config Nginx et Supervisor
 COPY nginx.conf /etc/nginx/sites-available/default
-
-# Config Supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Exposer ports
-EXPOSE 80
+EXPOSE 80 443 8000
 
-# Lancer supervisord (qui gère Daphne + Nginx)
-CMD ["/usr/bin/supervisord", "-n"]
+# Lancer supervisord
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
