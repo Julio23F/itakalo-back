@@ -1,34 +1,24 @@
 FROM python:3.10-slim
 
-# Installer dépendances système
+# Installer les bibliothèques système nécessaires
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     python3-dev \
-    nginx \
-    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-# Créer environnement virtuel
+# Créer et activer l'environnement virtuel
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Répertoire de travail
+# Copier le code et installer les dépendances
 WORKDIR /app
-
-# Installer Python dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt && pip install supabase
-
-# Copier le code
 COPY . /app
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+RUN pip install supabase
 
-# Copier config Nginx et Supervisor
-COPY nginx.conf /etc/nginx/sites-available/default
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Exposer ports
-EXPOSE 80 443 8000
-
-# Lancer supervisord
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Commande à exécuter au démarrage
+# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "itrasy.wsgi:application"]
+# CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+CMD ["/bin/bash", "-c", "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 config.asgi:application"]
