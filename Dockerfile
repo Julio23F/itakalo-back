@@ -22,6 +22,5 @@ EXPOSE 8080
 
 # Commande à exécuter au démarrage
 #CMD ["/bin/bash", "-c", "python manage.py migrate && gunicorn config.wsgi"]
-# CMD ["/bin/bash", "-c", "python manage.py migrate && daphne config.asgi:application"]
 CMD ["/bin/bash", "-c", "python manage.py migrate --noinput && daphne -b 0.0.0.0 -p 8080 config.asgi:application"]
 
