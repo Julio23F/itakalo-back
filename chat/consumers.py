@@ -88,6 +88,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Sauvegarder le message
         saved_message = await self.save_message(sender_id, self.room_name, message)
 
+        print(f"[DEBUG] Envoyer le message au groupe")
         # Envoyer le message au groupe
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -101,6 +102,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             },
         )
 
+        print(f"[DEBUG] send_new_message_notification")
         # Envoyer une notification à tous les participants de la conversation
         await self.send_new_message_notification(saved_message)
 
@@ -151,6 +153,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Obtenir la liste des participants sauf l'expéditeur
         participants = await self.get_conversation_participants(conversation.id)
 
+        print("send_new_message_notification")
         # Pour chaque participant, envoyer une notification
         for participant in participants:
             if str(participant.id) != str(self.user.id):
