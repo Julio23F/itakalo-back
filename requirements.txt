@@ -1,8 +1,8 @@
-asgiref==3.9.1
+# asgiref==3.9.1
 async-timeout==5.0.1
 attrs==25.3.0
-autobahn==24.4.2
-Automat==25.4.16
+# autobahn==24.4.2
+# Automat==25.4.16
 certifi==2025.7.9
 cffi==1.17.1
 channels==4.2.2
@@ -10,15 +10,15 @@ channels_redis==4.2.1
 charset-normalizer==3.4.2
 constantly==23.10.4
 cryptography==45.0.5
-daphne==4.2.1
+# daphne==4.2.1
 diff-match-patch==20241021
 Django==4.2.23
 django-cors-headers==3.3.0
-django-import-export==4.3.8
+# django-import-export==4.3.8
 django-nested-admin==4.1.1
 django-s3direct==2.0.3
-djangorestframework==3.16.0
-djangorestframework_simplejwt==5.5.0
+# djangorestframework==3.16.0
+# djangorestframework_simplejwt==5.5.0
 drf-yasg==1.21.10
 gunicorn==23.0.0
 hyperlink==21.0.0
@@ -37,18 +37,18 @@ python-decouple==3.8
 python-monkey-business==1.1.0
 pytz==2025.2
 PyYAML==6.0.2
-redis==6.2.0
+# redis==6.2.0
 requests==2.32.4
 # rest-framework-swagger==0.0.1
 service-identity==24.2.0
 sqlparse==0.5.3
-tablib==3.8.0
+# tablib==3.8.0
 tomli==2.2.1
 Twisted==25.5.0
-txaio==23.6.1
-typing_extensions==4.14.1
-uritemplate==4.2.0
-urllib3==2.5.0
+# txaio==23.6.1
+# typing_extensions==4.14.1
+# uritemplate==4.2.0
+# urllib3==2.5.0
 zope.interface==7.2
 
 supabase

@@ -97,40 +97,59 @@ class ProductDetail(APIView):
 
 
 class ProductCreate(APIView):
-    """
-    API pour créer un produit avec upload image vers Supabase
-    """
+  """
+  API pour créer un produit avec upload image vers Supabase
+  """
 
-    def post(self, request):
-        author_id = request.user.id
-        if not author_id:
-            return Response({"error": "L'auteur est requis."}, status=status.HTTP_400_BAD_REQUEST)
+  def post(self, request):
+    author_id = request.user.id
+    if not author_id:
+        return Response({"error": "L'auteur est requis."}, status=status.HTTP_400_BAD_REQUEST)
 
-        author = get_object_or_404(Member, id=author_id)
+    author = get_object_or_404(Member, id=author_id)
 
-        image_file = request.FILES.get('image')
-        image_url = None
+    image_file = request.FILES.get("image")
+    image_url = None
 
-        if image_file:
-            filename = f"{uuid.uuid4()}_{image_file.name}"
-            try:
-                settings.SUPABASE.storage.from_("product_images").upload(filename, image_file.read())
+    if image_file:
+      filename = f"{uuid.uuid4()}_{image_file.name}"
+      try:
+          response = settings.SUPABASE.storage.from_("product_images").upload(
+              filename, image_file.read()
+          )
+          print("DEBUG UPLOAD RESPONSE:", response)  # <--- log de debug
 
-                image_url = settings.SUPABASE.storage.from_("product_images").get_public_url(filename)
-            except Exception as e:
-                return Response({"error": "Échec upload Supabase", "details": str(e)}, status=500)
+          if response and isinstance(response, dict) and response.get("error"):
+              return Response(
+                  {"error": "Échec upload Supabase", "details": response["error"]},
+                  status=500,
+              )
 
-        data = request.data.copy()
+          image_url = settings.SUPABASE.storage.from_("product_images").get_public_url(
+              filename
+          )
+          print("DEBUG PUBLIC URL:", image_url)
 
-        if image_url:
-            data['image'] = image_url
+      except Exception as e:
+          import traceback
+          print("SUPABASE UPLOAD ERROR:", str(e))
+          print(traceback.format_exc())
+          return Response(
+              {"error": "Échec upload Supabase", "details": str(e)}, status=500
+          )
 
-        serializer = ProductSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save(author=author)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    data = request.data.copy()
+
+    if image_url:
+        data["image"] = image_url
+
+    serializer = ProductSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save(author=author)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ToggleLikeProductView(APIView):

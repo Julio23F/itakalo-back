@@ -161,9 +161,9 @@ import os
 from supabase import create_client
 
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://pynqduobepawjiwemgbm.supabase.co")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://gpjzgoojmpkdxmmtjmrh.supabase.co")
 # SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5bnFkdW9iZXBhd2ppd2VtZ2JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0ODA0OTYsImV4cCI6MjA3MjA1NjQ5Nn0.V4e7_zX4RldiImMy2XnON2EYfFVgqWYTdKjdQnyVQNk")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5bnFkdW9iZXBhd2ppd2VtZ2JtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjQ4MDQ5NiwiZXhwIjoyMDcyMDU2NDk2fQ.eKmneeuU6fzWnt3yCjWBQv1AxZQmMvIh3yVuZPeLU_U")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdwanpnb29qbXBrZHhtbXRqbXJoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTM0NDcwNCwiZXhwIjoyMDcwOTIwNzA0fQ.qJaRROI6ZpAFHEU2EChgoTDCq_z4fxxCcg9wOK1w6Dc")
 
 SUPABASE = create_client(SUPABASE_URL, SUPABASE_KEY)
 
