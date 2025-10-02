@@ -74,6 +74,13 @@ class MessageListView(generics.ListAPIView):
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    # def get_queryset(self):
+    #     conversation_id = self.kwargs["conversation_id"]
+    #     return Message.objects.filter(conversation_id=conversation_id)
     def get_queryset(self):
         conversation_id = self.kwargs["conversation_id"]
-        return Message.objects.filter(conversation_id=conversation_id)
+        return (
+            Message.objects.filter(conversation_id=conversation_id)
+            .order_by("-timestamp")[:50]  # ← 50 derniers messages
+        )
+
