@@ -68,7 +68,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Gestion des réactions
         if message_type == "reaction":
             message_id = data.get("message_id")
-            reaction = data.get("reaction")  # exemple: "👍"
+            reaction = data.get("reaction")
             if message_id and reaction:
                 updated_reactions = await self.toggle_reaction(message_id, reaction)
                 if updated_reactions is not None:
@@ -155,14 +155,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def toggle_reaction(self, message_id, reaction_emoji):
         """
-        Ajoute ou met à jour une réaction pour l'utilisateur actuel.
-        Un utilisateur ne peut avoir qu'une seule réaction par message.
+        Ajoute, met à jour ou retire une réaction pour l'utilisateur actuel.
+        - Si l'utilisateur clique sur une NOUVELLE réaction : supprime l'ancienne et ajoute la nouvelle
+        - Si l'utilisateur clique sur la MÊME réaction : la retire (toggle off)
+        - Un utilisateur ne peut avoir qu'une seule réaction par message
         Retourne les réactions mises à jour ou None en cas d'erreur.
         """
         try:
             message = Message.objects.get(id=message_id)
             reactions = message.reactions if message.reactions else {}
             user_id = str(self.user.id)
+
+            # Vérifier si l'utilisateur avait déjà cette réaction spécifique
+            had_this_reaction = reaction_emoji in reactions and user_id in reactions.get(reaction_emoji, [])
 
             # Supprimer toutes les réactions précédentes de cet utilisateur
             for emoji in list(reactions.keys()):
@@ -172,19 +177,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     if len(reactions[emoji]) == 0:
                         del reactions[emoji]
 
-            # Si la nouvelle réaction est différente de l'ancienne (ou s'il n'y en avait pas),
-            # ajouter la nouvelle réaction
-            if reaction_emoji not in reactions:
-                reactions[reaction_emoji] = []
-            
-            # Ajouter la nouvelle réaction si elle n'est pas déjà présente
-            if user_id not in reactions[reaction_emoji]:
+            # Si l'utilisateur n'avait PAS cette réaction, l'ajouter
+            # (Si il l'avait déjà, elle a été retirée ci-dessus = toggle off)
+            if not had_this_reaction:
+                if reaction_emoji not in reactions:
+                    reactions[reaction_emoji] = []
                 reactions[reaction_emoji].append(user_id)
-            else:
-                # Si l'utilisateur clique sur la même réaction, la retirer (toggle off)
-                reactions[reaction_emoji].remove(user_id)
-                if len(reactions[reaction_emoji]) == 0:
-                    del reactions[reaction_emoji]
 
             message.reactions = reactions
             message.save(update_fields=['reactions'])
