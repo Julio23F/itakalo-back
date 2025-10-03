@@ -2,13 +2,20 @@ import json
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 
+from member.models import Member
 from .models import Conversation, Message
 
-# User = get_user_model()
-from member.models import Member
-from django.contrib.auth.models import AnonymousUser
+REACTIONS = [
+    {"emoji": "👍", "name": "like"},
+    {"emoji": "❤️", "name": "heart"},
+    {"emoji": "😂", "name": "funny"},
+    {"emoji": "😮", "name": "wow"},
+    {"emoji": "😢", "name": "sad"},
+    {"emoji": "🙏", "name": "pray"},
+    {"emoji": "👏", "name": "clap"},
+]
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -20,33 +27,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
-
         # Marquer les messages comme lus lorsque l'utilisateur se connecte
-        # if not self.user.is_anonymous:
-            # await self.mark_messages_as_read()
         if not isinstance(self.user, AnonymousUser) and getattr(self.user, "is_authenticated", False):
             await self.mark_messages_as_read()
 
-
-
     async def disconnect(self, close_code):
-        # Quitter le groupe de la room
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-
-        # Vérifier le type de message
         message_type = data.get("type")
 
-        # Gestion des messages de type "read_receipt"
         if message_type == "read_receipt":
             message_id = data.get("message_id")
             if message_id:
-                # Marquer le message comme lu
                 updated = await self.mark_message_as_read(message_id)
                 if updated:
-                    # Notifier les autres participants que le message a été lu
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {
@@ -57,57 +53,56 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     )
             return
 
-        # Si c'est un message de statut de saisie
         if message_type == "typing_status":
             is_typing = data.get("is_typing", False)
-            sender_id = self.user.id
-
-            # Diffuser le statut de saisie à tous les membres du groupe
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     "type": "typing_status",
                     "is_typing": is_typing,
-                    "sender_id": sender_id,
+                    "sender_id": self.user.id,
                 },
             )
             return
 
-        # Sinon, c'est un message normal
+        # Gestion des réactions
+        if message_type == "reaction":
+            message_id = data.get("message_id")
+            reaction = data.get("reaction")  # exemple: "👍"
+            if message_id and reaction:
+                updated_reactions = await self.toggle_reaction(message_id, reaction)
+                if updated_reactions is not None:
+                    # Diffuser la réaction mise à jour à tous les participants
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            "type": "reaction_update",
+                            "message_id": message_id,
+                            "reaction": reaction,
+                            "user_id": str(self.user.id),
+                            "reactions": updated_reactions,
+                        },
+                    )
+            return
+
+        # Message normal
         message = data.get("message", "")
-        sender_id = self.user.id
-        sender = self.user
-
-
-        print(f"[DEBUG] Received message: {message}")
-        print(f"[DEBUG] Sender ID: {sender_id}")
-        print(f"[DEBUG] Sender: {sender}")
-        print(f"[DEBUG] Room name: {self.room_name}")
-
-
-        # Sauvegarder le message
-        saved_message = await self.save_message(sender_id, self.room_name, message)
-
-        print(f"[DEBUG] Envoyer le message au groupe")
-        # Envoyer le message au groupe
+        saved_message = await self.save_message(self.user.id, self.room_name, message)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 "type": "chat_message",
                 "message": message,
-                "message_id": saved_message.id,
-                "sender_id": sender_id,
+                "message_id": str(saved_message.id),
+                "sender_id": str(self.user.id),
                 "timestamp": saved_message.timestamp.isoformat(),
                 "is_read": False,
+                "reactions": saved_message.reactions or {},
             },
         )
-
-        print(f"[DEBUG] send_new_message_notification")
-        # Envoyer une notification à tous les participants de la conversation
         await self.send_new_message_notification(saved_message)
 
     async def chat_message(self, event):
-        # Envoyer le message au WebSocket
         await self.send(
             text_data=json.dumps(
                 {
@@ -116,12 +111,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "sender_id": event["sender_id"],
                     "timestamp": event["timestamp"],
                     "is_read": event["is_read"],
+                    "reactions": event.get("reactions", {}),
+                }
+            )
+        )
+
+    async def reaction_update(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "reaction",
+                    "message_id": event["message_id"],
+                    "reaction": event["reaction"],
+                    "user_id": event["user_id"],
+                    "reactions": event.get("reactions", {}),
                 }
             )
         )
 
     async def typing_status(self, event):
-        # Envoyer le statut de saisie au WebSocket SEULEMENT si ce n'est pas l'expéditeur
         if str(event["sender_id"]) != str(self.user.id):
             await self.send(
                 text_data=json.dumps(
@@ -134,8 +142,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
 
     async def read_receipt(self, event):
-        # Envoyer la notification de lecture uniquement à l'expéditeur du message
-        # Ce handler est appelé pour tous les utilisateurs dans le groupe
         await self.send(
             text_data=json.dumps(
                 {
@@ -145,6 +151,51 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
         )
+
+    @database_sync_to_async
+    def toggle_reaction(self, message_id, reaction_emoji):
+        """
+        Ajoute ou met à jour une réaction pour l'utilisateur actuel.
+        Un utilisateur ne peut avoir qu'une seule réaction par message.
+        Retourne les réactions mises à jour ou None en cas d'erreur.
+        """
+        try:
+            message = Message.objects.get(id=message_id)
+            reactions = message.reactions if message.reactions else {}
+            user_id = str(self.user.id)
+
+            # Supprimer toutes les réactions précédentes de cet utilisateur
+            for emoji in list(reactions.keys()):
+                if user_id in reactions[emoji]:
+                    reactions[emoji].remove(user_id)
+                    # Supprimer la clé si la liste est vide
+                    if len(reactions[emoji]) == 0:
+                        del reactions[emoji]
+
+            # Si la nouvelle réaction est différente de l'ancienne (ou s'il n'y en avait pas),
+            # ajouter la nouvelle réaction
+            if reaction_emoji not in reactions:
+                reactions[reaction_emoji] = []
+            
+            # Ajouter la nouvelle réaction si elle n'est pas déjà présente
+            if user_id not in reactions[reaction_emoji]:
+                reactions[reaction_emoji].append(user_id)
+            else:
+                # Si l'utilisateur clique sur la même réaction, la retirer (toggle off)
+                reactions[reaction_emoji].remove(user_id)
+                if len(reactions[reaction_emoji]) == 0:
+                    del reactions[reaction_emoji]
+
+            message.reactions = reactions
+            message.save(update_fields=['reactions'])
+            
+            return reactions
+        except Message.DoesNotExist:
+            print(f"[ERROR] Message {message_id} does not exist")
+            return None
+        except Exception as e:
+            print(f"[ERROR] Error toggling reaction: {e}")
+            return None
 
     async def send_new_message_notification(self, message):
         """Envoie une notification à tous les participants de la conversation"""
@@ -178,16 +229,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print(f"[DEBUG] save_message called with sender_id={sender_id}, room_name={room_name}, content={content}")
         conversation = Conversation.objects.get(id=room_name)
 
-
         try:
             sender = Member.objects.get(id=sender_id)
         except Member.DoesNotExist:
             print(f"[ERROR] Member with id={sender_id} does not exist!")
             raise
 
-        # sender = Member.objects.get(id=sender_id)
         return Message.objects.create(
-            conversation=conversation, sender=sender, content=content
+            conversation=conversation, 
+            sender=sender, 
+            content=content,
+            reactions={}  # Initialiser avec un dict vide
         )
 
     @database_sync_to_async
@@ -199,7 +251,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Ne marquer comme lu que si l'utilisateur actuel n'est pas l'expéditeur
             if message.sender.id != self.user.id:
                 message.is_read = True
-                message.save()
+                message.save(update_fields=['is_read'])
                 return True
             return False
         except Message.DoesNotExist:
@@ -219,7 +271,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message_ids = []
         for message in unread_messages:
             message.is_read = True
-            message.save()
+            message.save(update_fields=['is_read'])
             message_ids.append(message.id)
 
         # Notifier pour chaque message
