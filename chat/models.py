@@ -37,6 +37,14 @@ class Message(models.Model):
 
     reactions = models.JSONField(default=dict, blank=True, null=True)
 
+    reply_to = models.ForeignKey(
+        'self', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='replies'
+    )
+
     class Meta:
         ordering = ["timestamp"]
 

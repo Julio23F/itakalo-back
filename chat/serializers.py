@@ -5,12 +5,22 @@ from member.serializers import MemberSerializer
 from .models import Conversation, Message
 
 
+
+class ReplyToSerializer(serializers.ModelSerializer):
+    """Serializer pour le message cité"""
+    sender = MemberSerializer(read_only=True)
+    
+    class Meta:
+        model = Message
+        fields = ['id', 'content', 'sender', 'timestamp']
+
 class MessageSerializer(serializers.ModelSerializer):
     sender = MemberSerializer(read_only=True)
+    reply_to = ReplyToSerializer(read_only=True)
 
     class Meta:
         model = Message
-        fields = ["id", "sender", "content", "timestamp", "is_read", "reactions"]
+        fields = ["id", "sender", "content", "timestamp", "is_read", "reactions", 'reply_to']
         read_only_fields = ["sender", "timestamp", "is_read"]
 
 
