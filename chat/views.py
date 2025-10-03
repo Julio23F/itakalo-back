@@ -77,10 +77,25 @@ class MessageListView(generics.ListAPIView):
     # def get_queryset(self):
     #     conversation_id = self.kwargs["conversation_id"]
     #     return Message.objects.filter(conversation_id=conversation_id)
+    # def get_queryset(self):
+    #     conversation_id = self.kwargs["conversation_id"]
+
+    #     messages = list(
+    #         Message.objects.filter(conversation_id=conversation_id)
+    #         .order_by("-timestamp")[:50]  # 50 derniers
+    #     )
+    #     return messages
     def get_queryset(self):
         conversation_id = self.kwargs["conversation_id"]
-        return (
+
+        messages = list(
             Message.objects.filter(conversation_id=conversation_id)
-            .order_by("-timestamp")[:50]  # ← 50 derniers messages
+            .order_by("-timestamp")[:25]  # 10 derniers
         )
+
+        return list(reversed(messages))  # inversion
+
+
+
+
 
