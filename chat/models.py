@@ -45,6 +45,8 @@ class Message(models.Model):
         related_name='replies'
     )
 
+    images = models.JSONField(default=list, blank=True)
+
     class Meta:
         ordering = ["timestamp"]
 

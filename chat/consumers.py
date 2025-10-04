@@ -1,8 +1,12 @@
 import json
+import uuid
+import base64
+from io import BytesIO
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
+from django.conf import settings
 
 from member.models import Member
 from .models import Conversation, Message
@@ -33,7 +37,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
-        data = json.loads(text_data)
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError as e:
+            print(f"[ERROR] Invalid JSON received: {text_data}")
+            print(f"[ERROR] JSON Error: {e}")
+            await self.send(text_data=json.dumps({
+                "error": "Invalid JSON format",
+                "message": str(e)
+            }))
+            return
+        
         message_type = data.get("type")
 
         if message_type == "read_receipt":
@@ -81,15 +95,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     )
             return
 
-        # Message normal (avec possibilité de réponse)
+        # Message normal (avec possibilité de réponse et d'images)
         message = data.get("message", "")
-        reply_to_id = data.get("reply_to_id")  # ID du message auquel on répond
+        reply_to_id = data.get("reply_to_id")
+        images_data = data.get("images", [])
+        
+        # Upload des images vers Supabase
+        image_urls = []
+        if images_data:
+            image_urls = await self.upload_images(images_data)
         
         saved_message = await self.save_message(
             self.user.id, 
             self.room_name, 
             message,
-            reply_to_id
+            reply_to_id,
+            image_urls
         )
         
         # Récupérer les informations du message cité si nécessaire
@@ -108,6 +129,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "is_read": False,
                 "reactions": saved_message.reactions or {},
                 "reply_to": reply_to_data,
+                "images": image_urls,
             },
         )
         await self.send_new_message_notification(saved_message)
@@ -123,6 +145,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "is_read": event["is_read"],
                     "reactions": event.get("reactions", {}),
                     "reply_to": event.get("reply_to"),
+                    "images": event.get("images", []),
                 }
             )
         )
@@ -164,6 +187,42 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     @database_sync_to_async
+    def upload_images(self, images_data):
+        """Upload plusieurs images vers Supabase et retourne les URLs"""
+        image_urls = []
+        
+        for image_data in images_data:
+            try:
+                # Décoder l'image base64
+                # Format attendu: "data:image/jpeg;base64,/9j/4AAQ..."
+                if ',' in image_data:
+                    image_data = image_data.split(',')[1]
+                
+                image_bytes = base64.b64decode(image_data)
+                image_file = BytesIO(image_bytes)
+                
+                # Générer un nom de fichier unique
+                filename = f"messages/{uuid.uuid4()}.jpg"
+                
+                # Upload vers Supabase
+                settings.SUPABASE.storage.from_("profil_users").upload(
+                    filename, 
+                    image_file.getvalue()
+                )
+                
+                # Récupérer l'URL publique
+                image_url = settings.SUPABASE.storage.from_("profil_users").get_public_url(filename)
+                image_urls.append(image_url)
+                
+                print(f"[SUCCESS] Image uploaded: {filename}")
+                
+            except Exception as e:
+                print(f"[ERROR] Failed to upload image: {e}")
+                continue
+        
+        return image_urls
+
+    @database_sync_to_async
     def get_reply_to_data(self, reply_message):
         """Récupère les données du message cité"""
         try:
@@ -174,7 +233,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "id": str(reply_message.sender.id),
                     "first_name": reply_message.sender.first_name,
                     "last_name": reply_message.sender.last_name,
-                }
+                },
+                "images": reply_message.images if hasattr(reply_message, 'images') else []
             }
         except Exception as e:
             print(f"[ERROR] Error getting reply_to data: {e}")
@@ -233,13 +293,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         "sender_id": str(self.user.id),
                         "content": message.content,
                         "timestamp": message.timestamp.isoformat(),
+                        "images": message.images if hasattr(message, 'images') else []
                     },
                 )
 
     @database_sync_to_async
-    def save_message(self, sender_id, room_name, content, reply_to_id=None):
-        """Sauvegarde un message avec possibilité de répondre à un autre message"""
-        print(f"[DEBUG] save_message called with sender_id={sender_id}, room_name={room_name}, content={content}, reply_to_id={reply_to_id}")
+    def save_message(self, sender_id, room_name, content, reply_to_id=None, images=None):
+        """Sauvegarde un message avec possibilité de répondre à un autre message et d'ajouter des images"""
+        print(f"[DEBUG] save_message called with sender_id={sender_id}, room_name={room_name}, content={content}, reply_to_id={reply_to_id}, images={images}")
         conversation = Conversation.objects.get(id=room_name)
 
         try:
@@ -261,7 +322,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             sender=sender, 
             content=content,
             reactions={},
-            reply_to=reply_to
+            reply_to=reply_to,
+            images=images or []
         )
 
     @database_sync_to_async
