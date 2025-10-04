@@ -99,6 +99,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data.get("message", "")
         reply_to_id = data.get("reply_to_id")
         images_data = data.get("images", [])
+        temp_id = data.get("temp_id")  # ✅ Récupérer le temp_id
         
         # Upload des images vers Supabase
         image_urls = []
@@ -130,6 +131,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "reactions": saved_message.reactions or {},
                 "reply_to": reply_to_data,
                 "images": image_urls,
+                "temp_id": temp_id,  # ✅ Renvoyer le temp_id
             },
         )
         await self.send_new_message_notification(saved_message)
@@ -146,6 +148,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "reactions": event.get("reactions", {}),
                     "reply_to": event.get("reply_to"),
                     "images": event.get("images", []),
+                    "temp_id": event.get("temp_id"), 
                 }
             )
         )
