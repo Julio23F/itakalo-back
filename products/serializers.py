@@ -11,10 +11,9 @@ class ProductSerializer(serializers.ModelSerializer):
         required=False,
         allow_empty=True
     )
-    mots_cles_recherches = serializers.ListField(
-        child=serializers.CharField(max_length=50),
+    mots_cles_recherches = serializers.JSONField(
         required=False,
-        allow_empty=True
+        allow_null=True
     )
     
     class Meta:
@@ -54,12 +53,35 @@ class ProductSerializer(serializers.ModelSerializer):
     
     def validate_mots_cles_recherches(self, value):
         """Valide la liste de mots-clés"""
-        if value and len(value) > 20:
+        # Si c'est une chaîne JSON, la parser
+        if isinstance(value, str):
+            try:
+                import json
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                raise serializers.ValidationError(
+                    "Format invalide. Utilisez un tableau JSON : [\"mot1\", \"mot2\"]"
+                )
+        
+        # Si c'est None ou vide, retourner liste vide
+        if not value:
+            return []
+        
+        # Vérifier que c'est bien une liste
+        if not isinstance(value, list):
+            raise serializers.ValidationError(
+                "Doit être une liste de mots-clés : [\"mot1\", \"mot2\"]"
+            )
+        
+        # Valider le nombre de mots-clés
+        if len(value) > 20:
             raise serializers.ValidationError("Maximum 20 mots-clés autorisés")
         
         # Nettoyer et normaliser les mots-clés
         cleaned = []
         for mot in value:
+            if not isinstance(mot, str):
+                continue
             mot_clean = mot.strip().lower()
             if mot_clean and len(mot_clean) >= 2:
                 cleaned.append(mot_clean)
