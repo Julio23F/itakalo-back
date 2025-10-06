@@ -6,9 +6,11 @@ from member.models import Member
 class Product(models.Model):
     DONATION = 'DONATION'
     SALE = 'SALE'
+    EXCHANGE = 'EXCHANGE'
     PRODUCT_TYPE = (
         (DONATION, DONATION),
         (SALE, SALE),
+        (EXCHANGE, EXCHANGE)
     )
     T_SHIRT = 'T_SHIRT'
     PANTALON = 'PANTALON'
@@ -29,7 +31,10 @@ class Product(models.Model):
 
     adresse = models.CharField(max_length=255, blank=True, null=True)
 
-    image = models.URLField(blank=True, null=True)
+    images = models.JSONField(default=list, blank=True)
+
+    mots_cles_recherches = models.JSONField(default=list, blank=True)
+
     type = models.CharField(choices=PRODUCT_TYPE, max_length=15, blank=False)
     category = models.CharField(choices=PRODUCT_CATEGORY, max_length=15, blank=False, default='DONATION')
     description = models.CharField(max_length=128, blank=False)

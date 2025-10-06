@@ -95,62 +95,238 @@ class ProductDetail(APIView):
 
 
 
+class ProductCreateT(APIView):
+    """Vue pour créer un produit avec upload d'images"""
+    
+    ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+    
+    def validate_image(self, image_file):
+        """Valide le fichier image"""
+        # Vérifier l'extension
+        ext = image_file.name.split('.')[-1].lower()
+        if ext not in self.ALLOWED_EXTENSIONS:
+            return False, f"Extension non autorisée. Utilisez: {', '.join(self.ALLOWED_EXTENSIONS)}"
+        
+        # Vérifier la taille
+        if image_file.size > self.MAX_FILE_SIZE:
+            return False, f"Fichier trop volumineux. Taille max: 5MB"
+        
+        return True, None
+    
+    def upload_images(self, images_data):
+        """Upload les images vers Supabase et retourne les URLs"""
+        image_urls = []
+        errors = []
+        
+        for idx, image_file in enumerate(images_data):
+            # Validation
+            is_valid, error_msg = self.validate_image(image_file)
+            if not is_valid:
+                errors.append(f"Image {idx + 1}: {error_msg}")
+                continue
+            
+            try:
+                # Générer un nom de fichier unique
+                ext = image_file.name.split('.')[-1].lower()
+                filename = f"products/{uuid.uuid4()}.{ext}"
+                
+                # Upload vers Supabase
+                settings.SUPABASE.storage.from_("product_images").upload(
+                    filename, 
+                    image_file.read(),
+                    file_options={"content-type": image_file.content_type}
+                )
+                
+                # Récupérer l'URL publique
+                image_url = settings.SUPABASE.storage.from_("product_images").get_public_url(filename)
+                image_urls.append(image_url)
+                
+            except Exception as e:
+                error_msg = f"Image {idx + 1} ({image_file.name}): Échec de l'upload - {str(e)}"
+                errors.append(error_msg)
+                print(f"[ERROR] {error_msg}")
+                continue
+        
+        return image_urls, errors
+    
+    def post(self, request):
+        """Crée un nouveau produit avec images"""
+        author_id = request.user.id
+        
+        if not author_id:
+            return Response(
+                {"error": "Authentification requise."}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        # Récupérer l'auteur
+        author = get_object_or_404(Member, id=author_id)
+        
+        # Récupérer les images
+        images_data = request.FILES.getlist("images")
+        print(f"[INFO] {len(images_data)} image(s) reçue(s)")
+        
+        # Upload des images
+        image_urls = []
+        upload_errors = []
+        
+        if images_data:
+            image_urls, upload_errors = self.upload_images(images_data)
+            
+            # Si aucune image n'a été uploadée avec succès
+            if not image_urls and images_data:
+                return Response(
+                    {
+                        "error": "Aucune image n'a pu être uploadée.",
+                        "details": upload_errors
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Préparer les données pour le serializer
+        # Utiliser dict() au lieu de copy() pour éviter les problèmes avec les fichiers
+        data = {key: value for key, value in request.data.items()}
+        if image_urls:
+            data["images"] = image_urls
+        
+        # Créer le produit
+        serializer = ProductSerializer(data=data)
+        if serializer.is_valid():
+            product = serializer.save(author=author)
+            
+            # Inclure les warnings d'upload si présents
+            response_data = serializer.data
+            if upload_errors:
+                response_data["warnings"] = upload_errors
+            
+            return Response(
+                response_data,
+                status=status.HTTP_201_CREATED
+            )
+        
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
 
 class ProductCreate(APIView):
-  """
-  API pour créer un produit avec upload image vers Supabase
-  """
-
-  def post(self, request):
-    author_id = request.user.id
-    if not author_id:
-        return Response({"error": "L'auteur est requis."}, status=status.HTTP_400_BAD_REQUEST)
-
-    author = get_object_or_404(Member, id=author_id)
-
-    image_file = request.FILES.get("image")
-    image_url = None
-
-    if image_file:
-      filename = f"{uuid.uuid4()}_{image_file.name}"
-      try:
-          response = settings.SUPABASE.storage.from_("product_images").upload(
-              filename, image_file.read()
-          )
-          print("DEBUG UPLOAD RESPONSE:", response)  # <--- log de debug
-
-          if response and isinstance(response, dict) and response.get("error"):
-              return Response(
-                  {"error": "Échec upload Supabase", "details": response["error"]},
-                  status=500,
-              )
-
-          image_url = settings.SUPABASE.storage.from_("product_images").get_public_url(
-              filename
-          )
-          print("DEBUG PUBLIC URL:", image_url)
-
-      except Exception as e:
-          import traceback
-          print("SUPABASE UPLOAD ERROR:", str(e))
-          print(traceback.format_exc())
-          return Response(
-              {"error": "Échec upload Supabase", "details": str(e)}, status=500
-          )
-
-
-    data = request.data.copy()
-
-    if image_url:
-        data["image"] = image_url
-
-    serializer = ProductSerializer(data=data)
-    if serializer.is_valid():
-        serializer.save(author=author)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    """Vue pour créer un produit avec upload d'images"""
+    
+    ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+    
+    def validate_image(self, image_file):
+        """Valide le fichier image"""
+        # Vérifier l'extension
+        ext = image_file.name.split('.')[-1].lower()
+        if ext not in self.ALLOWED_EXTENSIONS:
+            return False, f"Extension non autorisée. Utilisez: {', '.join(self.ALLOWED_EXTENSIONS)}"
+        
+        # Vérifier la taille
+        if image_file.size > self.MAX_FILE_SIZE:
+            return False, f"Fichier trop volumineux. Taille max: 5MB"
+        
+        return True, None
+    
+    def upload_images(self, images_data):
+        """Upload les images vers Supabase et retourne les URLs"""
+        image_urls = []
+        errors = []
+        
+        for idx, image_file in enumerate(images_data):
+            # Validation
+            is_valid, error_msg = self.validate_image(image_file)
+            if not is_valid:
+                errors.append(f"Image {idx + 1}: {error_msg}")
+                continue
+            
+            try:
+                # Générer un nom de fichier unique
+                ext = image_file.name.split('.')[-1].lower()
+                filename = f"products/{uuid.uuid4()}.{ext}"
+                
+                # Upload vers Supabase
+                settings.SUPABASE.storage.from_("product_images").upload(
+                    filename, 
+                    image_file.read(),
+                    file_options={"content-type": image_file.content_type}
+                )
+                
+                # Récupérer l'URL publique
+                image_url = settings.SUPABASE.storage.from_("product_images").get_public_url(filename)
+                image_urls.append(image_url)
+                
+            except Exception as e:
+                error_msg = f"Image {idx + 1} ({image_file.name}): Échec de l'upload - {str(e)}"
+                errors.append(error_msg)
+                print(f"[ERROR] {error_msg}")
+                continue
+        
+        return image_urls, errors
+    
+    def post(self, request):
+        """Crée un nouveau produit avec images"""
+        author_id = request.user.id
+        
+        if not author_id:
+            return Response(
+                {"error": "Authentification requise."}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        # Récupérer l'auteur
+        author = get_object_or_404(Member, id=author_id)
+        
+        # Récupérer les images
+        images_data = request.FILES.getlist("images")
+        print(f"[INFO] {len(images_data)} image(s) reçue(s)")
+        
+        # Upload des images
+        image_urls = []
+        upload_errors = []
+        
+        if images_data:
+            image_urls, upload_errors = self.upload_images(images_data)
+            
+            # Si aucune image n'a été uploadée avec succès
+            if not image_urls and images_data:
+                return Response(
+                    {
+                        "error": "Aucune image n'a pu être uploadée.",
+                        "details": upload_errors
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Préparer les données pour le serializer
+        # Utiliser dict() au lieu de copy() pour éviter les problèmes avec les fichiers
+        data = {key: value for key, value in request.data.items()}
+        if image_urls:
+            data["images"] = image_urls
+        
+        # Créer le produit
+        serializer = ProductSerializer(data=data)
+        if serializer.is_valid():
+            product = serializer.save(author=author)
+            
+            # Inclure les warnings d'upload si présents
+            response_data = serializer.data
+            if upload_errors:
+                response_data["warnings"] = upload_errors
+            
+            return Response(
+                response_data,
+                status=status.HTTP_201_CREATED
+            )
+        
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
 
 class ToggleLikeProductView(APIView):
     """
