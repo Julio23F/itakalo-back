@@ -208,13 +208,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 filename = f"messages/{uuid.uuid4()}.jpg"
                 
                 # Upload vers Supabase
-                settings.SUPABASE.storage.from_("profil_users").upload(
+                settings.SUPABASE.storage.from_("messages_images").upload(
                     filename, 
                     image_file.getvalue()
                 )
                 
                 # Récupérer l'URL publique
-                image_url = settings.SUPABASE.storage.from_("profil_users").get_public_url(filename)
+                image_url = settings.SUPABASE.storage.from_("messages_images").get_public_url(filename)
                 image_urls.append(image_url)
                 
                 print(f"[SUCCESS] Image uploaded: {filename}")
