@@ -6,11 +6,11 @@ from member.models import Member
 class Product(models.Model):
     DONATION = 'DONATION'
     SALE = 'SALE'
-    EXCHANGE = 'EXCHANGE'
+    ECHANGE = 'ECHANGE'
     PRODUCT_TYPE = (
         (DONATION, DONATION),
         (SALE, SALE),
-        (EXCHANGE, EXCHANGE)
+        (ECHANGE, ECHANGE)
     )
     T_SHIRT = 'T_SHIRT'
     PANTALON = 'PANTALON'
