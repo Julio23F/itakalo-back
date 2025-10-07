@@ -108,3 +108,124 @@ class ProductSerializer(serializers.ModelSerializer):
             data['price'] = 0  # Forcer à 0
         
         return data
+    
+
+
+
+
+
+class ProductSerializerDetail(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(read_only=True)
+    author_name = serializers.CharField(source='author.username', read_only=True)
+    total_likes = serializers.IntegerField(source='likes.count', read_only=True)
+    images = serializers.ListField(
+        child=serializers.URLField(),
+        required=False,
+        allow_empty=True
+    )
+    mots_cles_recherches = serializers.JSONField(
+        required=False,
+        allow_null=True
+    )
+
+    # ✅ Nouveau champ pour les suggestions
+    suggestions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = (
+            'id',
+            'title',
+            'images',
+            'type',
+            'price',
+            'category',
+            'description',
+            'author',
+            'author_name',
+            'likes',
+            'total_likes',
+            'adresse',
+            'mots_cles_recherches',
+            'created_at',
+            'updated_at',
+            'suggestions', # ✅ ajouté ici
+        )
+        read_only_fields = (
+            'id',
+            'author',
+            'author_name',
+            'likes',
+            'total_likes',
+            'created_at',
+            'updated_at',
+            'suggestions', # ✅ aussi en lecture seule
+        )
+
+    def get_suggestions(self, obj):
+        """
+        Retourne une liste de produits ayant le même type que le produit courant.
+        Exclut le produit lui-même.
+        """
+        same_type_products = Product.objects.filter(type=obj.type).exclude(id=obj.id)[:5]
+        return ProductSuggestionSerializer(same_type_products, many=True).data
+
+    def validate_images(self, value):
+        if value and len(value) > 10:
+            raise serializers.ValidationError("Maximum 10 images autorisées")
+        return value
+
+    def validate_mots_cles_recherches(self, value):
+        if isinstance(value, str):
+            try:
+                import json
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                raise serializers.ValidationError(
+                    "Format invalide. Utilisez un tableau JSON : [\"mot1\", \"mot2\"]"
+                )
+
+        if not value:
+            return []
+
+        if not isinstance(value, list):
+            raise serializers.ValidationError(
+                "Doit être une liste de mots-clés : [\"mot1\", \"mot2\"]"
+            )
+
+        if len(value) > 20:
+            raise serializers.ValidationError("Maximum 20 mots-clés autorisés")
+
+        cleaned = []
+        for mot in value:
+            if not isinstance(mot, str):
+                continue
+            mot_clean = mot.strip().lower()
+            if mot_clean and len(mot_clean) >= 2:
+                cleaned.append(mot_clean)
+
+        return list(set(cleaned))
+
+    def validate_price(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Le prix ne peut pas être négatif")
+        return value
+
+    def validate(self, data):
+        if data.get('type') == 'SALE' and data.get('price', 0) <= 0:
+            raise serializers.ValidationError({
+                'price': "Le prix doit être supérieur à 0 pour une vente"
+            })
+
+        if data.get('type') == 'DONATION' and data.get('price', 0) != 0:
+            data['price'] = 0
+
+        return data
+
+
+# ✅ Serializer simplifié pour les suggestions (pour éviter de renvoyer trop d'infos)
+class ProductSuggestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ('id', 'title', 'images', 'price', 'type', 'category')
+

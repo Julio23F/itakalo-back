@@ -15,6 +15,7 @@ from utils.pagination_utils import (
 from .models import Product
 from .serializers import (
   ProductSerializer,
+  ProductSerializerDetail
 )
 
 # from rest_framework.permissions import IsAuthenticated
@@ -58,7 +59,7 @@ class ProductDetail(APIView):
         item = self.get_object(user=request.user)
             
             
-    serializer = ProductSerializer(item)
+    serializer = ProductSerializerDetail(item)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
   def put(self, request, pk, format=None):
