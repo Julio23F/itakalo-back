@@ -14,7 +14,8 @@ from .serializers import (
   RegisterByEmailSerializer,
   ForgetPasswordSerializer,
   ChangeEmailSerializer,
-  ChangePasswordSerializer
+  ChangePasswordSerializer,
+  GoogleAuthSerializer
 )
 from .custom_admin_jwt import (
   custom_admin_authentication,
@@ -33,19 +34,117 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-# class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-#     @classmethod
-#     def get_token(cls, user):
-#         token = super().get_token(user)
 
-#         # Tu peux ajouter des champs personnalisés ici si tu veux
-#         token['email'] = user.email
-#         # token['username'] = user.username
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from django.conf import settings
+from datetime import datetime
 
-#         return token
+from rest_framework.permissions import AllowAny
 
-# class CustomTokenObtainPairView(TokenObtainPairView):
-#     serializer_class = CustomTokenObtainPairSerializer
+from django.db import models
+
+class GoogleLoginAPIView(APIView):
+    """
+    Endpoint pour la connexion avec Google OAuth
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
+    def verify_google_token(self, token):
+        """
+        Vérifie le token Google et retourne les informations de l'utilisateur
+        """
+        try:
+            # Vérifier le token avec Google
+            idinfo = id_token.verify_oauth2_token(
+                token, 
+                requests.Request(), 
+                settings.GOOGLE_OAUTH_CLIENT_ID
+            )
+            
+            # Vérifier que le token provient bien de Google
+            if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+                raise ValueError('Wrong issuer.')
+            
+            # Vérifier le domaine si nécessaire
+            if hasattr(settings, 'GOOGLE_OAUTH_ALLOWED_DOMAINS') and settings.GOOGLE_OAUTH_ALLOWED_DOMAINS:
+                email_domain = idinfo['email'].split('@')[1]
+                if email_domain not in settings.GOOGLE_OAUTH_ALLOWED_DOMAINS:
+                    raise ValueError(f'Domain {email_domain} not allowed.')
+            
+            return idinfo
+            
+        except ValueError as e:
+            raise AuthenticationFailed(f'Invalid token: {str(e)}')
+        except Exception as e:
+            raise AuthenticationFailed(f'Token verification failed: {str(e)}')
+    
+    def get_or_create_user(self, google_data):
+        """
+        Récupère ou crée un utilisateur à partir des données Google
+        """
+        email = google_data.get('email')
+        google_id = google_data.get('sub')
+        
+        # Chercher l'utilisateur par email ou google_id
+        member = Member.objects.filter(
+            models.Q(email=email) | models.Q(google_id=google_id)
+        ).first()
+        
+        if member:
+            # Mettre à jour les informations si nécessaire
+            if not member.google_id:
+                member.google_id = google_id
+            member.is_google_user = True
+            member.profile_picture = google_data.get('picture')
+            member.login_date = datetime.now()
+            member.save()
+        else:
+            # Créer un nouveau membre
+            member = Member.objects.create(
+                email=email,
+                google_id=google_id,
+                first_name=google_data.get('given_name', ''),
+                last_name=google_data.get('family_name', ''),
+                username=email.split('@')[0],  # Générer un username
+                profile_picture=google_data.get('picture'),
+                is_google_user=True,
+                login_date=datetime.now()
+            )
+        
+        return member
+    
+    def post(self, request):
+        """
+        POST /api/auth/google/
+        Body: { "token": "google_id_token" }
+        """
+
+        print("POST /api/auth/google/")
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Vérifier le token Google
+        google_data = self.verify_google_token(serializer.validated_data['token'])
+        
+        # Créer ou récupérer l'utilisateur
+        member = self.get_or_create_user(google_data)
+        
+        print(f"+++++++++++++ member {member}")
+
+        # Générer le JWT token
+        payload = jwt_payload_handler(member)
+        token = jwt_encode_handler(payload)
+        
+        return Response({
+            'token': token,
+            'member': MemberSerializer(member).data,
+            'message': 'Connexion réussie'
+        }, status=status.HTTP_200_OK)
+
+
+
 
 class CustomLogin(APIView):
     permission_classes = []
@@ -129,54 +228,54 @@ class CustomLogin(APIView):
       return self.process_member(request, member, serializer)
 
 
-class CustomLoginByEmail(APIView):
-    permission_classes = []
+# class CustomLoginByEmail(APIView):
+#     permission_classes = []
 
-    def process_admin_user(self, request, admin, serializer):
-      admin_user = custom_admin_authentication(
-        request, 
-        email=serializer.data['email'],
-        password=serializer.data['password']
-      )
-      if admin_user is None:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
-      else:
-        payload = admin_jwt_payload_handler(admin_user)
-        # Generate admin jwt token
-        token = admin_jwt_encode_handler(payload)
-        return Response({'token': token, 'member': payload})
+#     def process_admin_user(self, request, admin, serializer):
+#       admin_user = custom_admin_authentication(
+#         request, 
+#         email=serializer.data['email'],
+#         password=serializer.data['password']
+#       )
+#       if admin_user is None:
+#         return Response(status=status.HTTP_401_UNAUTHORIZED)
+#       else:
+#         payload = admin_jwt_payload_handler(admin_user)
+#         # Generate admin jwt token
+#         token = admin_jwt_encode_handler(payload)
+#         return Response({'token': token, 'member': payload})
 
-    def process_member(self, request, member, serializer):
-      if member.password != serializer.data['password']:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
-      member.login_date = datetime.now()
-      member.save()
-      payload = jwt_payload_handler(member)
-      token = jwt_encode_handler(payload)
-      return Response({'token': token, 'member': payload})
+#     def process_member(self, request, member, serializer):
+#       if member.password != serializer.data['password']:
+#         return Response(status=status.HTTP_401_UNAUTHORIZED)
+#       member.login_date = datetime.now()
+#       member.save()
+#       payload = jwt_payload_handler(member)
+#       token = jwt_encode_handler(payload)
+#       return Response({'token': token, 'member': payload})
 
-    @swagger_auto_schema(
-        request_body=LoginSerializer(many=False),
-        responses={200: MemberSerializer(many=False)}
-    )
-    def post(self, request, format=None):
-      serializer = LoginSerializer(
-        data=request.data,
-        context={'request': request}
-      )
-      serializer.is_valid(raise_exception=True)
-      email = serializer.data['email'] if ('email' in serializer.data) else None
-      udid = serializer.data['udid'] if ('udid' in serializer.data) else None
-      member = Member.objects.filter(email=serializer.data['email']).first()
-      if member is None:
-        # Check admin user.
-        admin = User.objects.filter(email=serializer.data['email']).first()
-        if admin is None:
-          return Response(status=status.HTTP_404_NOT_FOUND)
-        return self.process_admin_user(request, admin, serializer)
+#     @swagger_auto_schema(
+#         request_body=LoginSerializer(many=False),
+#         responses={200: MemberSerializer(many=False)}
+#     )
+#     def post(self, request, format=None):
+#       serializer = LoginSerializer(
+#         data=request.data,
+#         context={'request': request}
+#       )
+#       serializer.is_valid(raise_exception=True)
+#       email = serializer.data['email'] if ('email' in serializer.data) else None
+#       udid = serializer.data['udid'] if ('udid' in serializer.data) else None
+#       member = Member.objects.filter(email=serializer.data['email']).first()
+#       if member is None:
+#         # Check admin user.
+#         admin = User.objects.filter(email=serializer.data['email']).first()
+#         if admin is None:
+#           return Response(status=status.HTTP_404_NOT_FOUND)
+#         return self.process_admin_user(request, admin, serializer)
 
-      # Generate member jwt token
-      return self.process_member(request, member, serializer)
+#       # Generate member jwt token
+#       return self.process_member(request, member, serializer)
 
 
 class Logout(APIView):

@@ -281,3 +281,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+# Google auth
+
+GOOGLE_OAUTH_CLIENT_ID = '82290075303-99d1t00h5nfc82af5fs8kf6dlm7vajlc.apps.googleusercontent.com'
+GOOGLE_OAUTH_CLIENT_SECRET = 'votre-client-secret'
+
+# Optionnel : domaines autorisés pour l'authentification
+GOOGLE_OAUTH_ALLOWED_DOMAINS = []

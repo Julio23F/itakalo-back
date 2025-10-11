@@ -1,12 +1,20 @@
 from rest_framework import serializers
 from member.models import Member
 
+
+class GoogleAuthSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
+
+
+    
 class LoginSerializer(serializers.ModelSerializer):
   class Meta:
     model = Member
     fields = (
       'email',
       'password',
+      'profile_picture', 
+      'is_google_user', 
     )
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -20,6 +28,8 @@ class RegisterSerializer(serializers.ModelSerializer):
       'telnumber',
       'password',
       'udid',
+      'profile_picture', 
+      'is_google_user', 
     )
 
 
@@ -36,6 +46,8 @@ class RegisterByEmailSerializer(serializers.ModelSerializer):
       'password',
       'plat_form',
       'udid',
+      'profile_picture', 
+      'is_google_user', 
     )
 
 class ChangeEmailSerializer(serializers.ModelSerializer):

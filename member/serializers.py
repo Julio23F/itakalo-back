@@ -13,6 +13,10 @@ class MemberSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'telnumber',
+
+            'profile_picture', 
+            'is_google_user',
+
             'updated_at',
             'created_at'
         )

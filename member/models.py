@@ -24,6 +24,16 @@ class Member(models.Model):
     udid = models.CharField(max_length=64, blank=True, null=True)
     login_date = models.DateTimeField(blank=True, null=True)
     is_valid_email = models.BooleanField(blank=True, default=True)
+
+
+
+    # Champs pour Google OAuth
+    username = models.CharField(max_length=150, unique=True, null=True, blank=True)
+    google_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    profile_picture = models.URLField(null=True, blank=True)
+    is_google_user = models.BooleanField(default=False)
+ 
+
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
