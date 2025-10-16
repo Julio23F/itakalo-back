@@ -36,7 +36,7 @@ class Product(models.Model):
     mots_cles_recherches = models.JSONField(default=list, blank=True)
 
     type = models.CharField(choices=PRODUCT_TYPE, max_length=15, blank=False)
-    category = models.CharField(choices=PRODUCT_CATEGORY, max_length=15, blank=False, default='DONATION')
+    category = models.CharField(choices=PRODUCT_CATEGORY, max_length=15, blank=False, default='T_SHIRT')
     description = models.CharField(max_length=128, blank=False)
 
     author = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='products')
