@@ -87,12 +87,9 @@ class FilterPagination:
         else:
             queryset = queryset_filter[start_limit:end_limit]
 
-      
         queryset = (
             queryset
-            .only("id", "created_at", "updated_at")  # + autres champs si nécessaire
-            # .select_related("some_fk_field")        # si une FK
-            # .prefetch_related("some_m2m_field")     # si un M2M
+            .only("id", "created_at", "updated_at")
         )
 
         # On fait un list(...) pour la mesure, SANS l'affecter au 'dataset'
@@ -106,7 +103,6 @@ class FilterPagination:
             f"count={data_count}, (~{data_size_mb:.2f} MB) in {elapsed:.3f}s"
         )
 
-        # On retourne un QuerySet dans le dataset pour pouvoir faire .values() 
         dataset = {
             'queryset': queryset,  
             'pagination': {
@@ -117,6 +113,42 @@ class FilterPagination:
             }
         }
         return dataset
+
+    @staticmethod
+    def get_search_inverse(request, model_reference, serializer_class, search_field='title'):
+        """
+        Recherche inverse : trouve les objets dont mots_cles_recherches 
+        contient la valeur recherchée dans search_field
+        
+        Args:
+            request: requête Django
+            model_reference: modèle Django (ex: Product)
+            serializer_class: serializer pour les résultats
+            search_field: champ sur lequel effectuer la recherche (par défaut 'title')
+        
+        Returns:
+            Liste sérialisée des résultats ou None si pas de recherche
+        """
+        search_value = request.GET.get(search_field)
+        
+        if not search_value:
+            return None
+        
+        # Recherche les objets où mots_cles_recherches contient la valeur recherchée
+        # __icontains permet une recherche insensible à la casse
+        inverse_queryset = model_reference.objects.filter(
+            mots_cles_recherches__icontains=search_value.lower()
+        ).distinct()
+        
+        # Sérialise les résultats
+        serialized_inverse = serializer_class(inverse_queryset, many=True).data
+        
+        logger.debug(
+            f"[search_inverse] search_field={search_field}, "
+            f"search_value={search_value}, found={inverse_queryset.count()} results"
+        )
+        
+        return serialized_inverse
 
     @staticmethod
     def generate_pagination_params(description=None, additional_params=None):
@@ -169,10 +201,14 @@ class FilterPagination:
 
     @staticmethod
     def get_pagination_data(request, model_class, serializer_class,
-                           queries=None, order_by_array=None, special_order_by=None):
+                           queries=None, order_by_array=None, special_order_by=None,
+                           enable_search_inverse=False, search_inverse_field='title'):
         """
-        Retourne data sérialisée + pagination.
-        On conserve un QuerySet, donc .values() reste possible plus tard.
+        Retourne data sérialisée + pagination + search_inverse optionnel.
+        
+        Args:
+            enable_search_inverse: active la recherche inverse (défaut: False)
+            search_inverse_field: champ sur lequel effectuer la recherche inverse (défaut: 'title')
         """
         queryset_info = FilterPagination.filter_and_pagination(
             request,
@@ -181,9 +217,23 @@ class FilterPagination:
             order_by_array,
             special_order_by
         )
-        # sérialise la partie 'queryset' (qui est encore un QuerySet).
+        
+        # Sérialise la partie 'queryset'
         serialized = serializer_class(queryset_info['queryset'], many=True).data
-        return {
+        
+        result = {
             'dataset': serialized,
             'pagination': queryset_info['pagination']
         }
+        
+        # Ajoute search_inverse si activé
+        if enable_search_inverse:
+            search_inverse_result = FilterPagination.get_search_inverse(
+                request, 
+                model_class, 
+                serializer_class,
+                search_inverse_field
+            )
+            result['search_inverse'] = search_inverse_result
+        
+        return result

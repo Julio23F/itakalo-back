@@ -128,7 +128,7 @@ class ProductSerializerDetail(serializers.ModelSerializer):
         allow_null=True
     )
 
-    # ✅ Nouveau champ pour les suggestions
+    #  Nouveau champ pour les suggestions
     suggestions = serializers.SerializerMethodField()
 
     class Meta:
@@ -149,7 +149,7 @@ class ProductSerializerDetail(serializers.ModelSerializer):
             'mots_cles_recherches',
             'created_at',
             'updated_at',
-            'suggestions', # ✅ ajouté ici
+            'suggestions', #  ajouté ici
         )
         read_only_fields = (
             'id',
@@ -159,7 +159,7 @@ class ProductSerializerDetail(serializers.ModelSerializer):
             'total_likes',
             'created_at',
             'updated_at',
-            'suggestions', # ✅ aussi en lecture seule
+            'suggestions', #  aussi en lecture seule
         )
 
     def get_suggestions(self, obj):
@@ -223,7 +223,7 @@ class ProductSerializerDetail(serializers.ModelSerializer):
         return data
 
 
-# ✅ Serializer simplifié pour les suggestions (pour éviter de renvoyer trop d'infos)
+#  Serializer simplifié pour les suggestions (pour éviter de renvoyer trop d'infos)
 class ProductSuggestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product

@@ -26,18 +26,20 @@ from django.conf import settings
 
 
 class ProductList(APIView):
-  permission_classes = []
-  # permission_classes = [IsAuthenticated]
+    permission_classes = []
+    # permission_classes = [IsAuthenticated]
 
-  def get(self, request, format=None):
-    resultset = FilterPagination.get_pagination_data(
-      request,
-      Product,
-      ProductSerializer,
-      queries=None,
-      order_by_array=('-id',)
-    )
-    return Response(resultset)
+    def get(self, request, format=None):
+        resultset = FilterPagination.get_pagination_data(
+            request,
+            Product,
+            ProductSerializer,
+            queries=None,
+            order_by_array=('-id',),
+            enable_search_inverse=True,  # Active la recherche inverse
+            search_inverse_field='title'  # Champ sur lequel chercher (par défaut 'title')
+        )
+        return Response(resultset)
 
 
 class ProductDetail(APIView):
