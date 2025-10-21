@@ -277,28 +277,53 @@ class ChatConsumer(AsyncWebsocketConsumer):
             print(f"[ERROR] Error toggling reaction: {e}")
             return None
 
+    # async def send_new_message_notification(self, message):
+    #     """Envoie une notification à tous les participants de la conversation"""
+    #     conversation = await self.get_conversation(self.room_name)
+    #     participants = await self.get_conversation_participants(conversation.id)
+
+    #     print("send_new_message_notification")
+    #     for participant in participants:
+    #         if str(participant.id) != str(self.user.id):
+    #             notification_group = f"notifications_{participant.id}"
+
+    #             await self.channel_layer.group_send(
+    #                 notification_group,
+    #                 {
+    #                     "type": "new_message_notification",
+    #                     "conversation_id": str(conversation.id),
+    #                     "message_id": str(message.id),
+    #                     "sender_id": str(self.user.id),
+    #                     "content": message.content,
+    #                     "timestamp": message.timestamp.isoformat(),
+    #                     "images": message.images if hasattr(message, 'images') else []
+    #                 },
+    #             )
     async def send_new_message_notification(self, message):
-        """Envoie une notification à tous les participants de la conversation"""
+        """Envoie une notification à tous les participants de la conversation (incluant l'envoyeur)"""
         conversation = await self.get_conversation(self.room_name)
         participants = await self.get_conversation_participants(conversation.id)
 
-        print("send_new_message_notification")
+        print(f"[DEBUG] 📢 Envoi de notifications pour le message {message.id} à TOUS les participants")
+        
         for participant in participants:
-            if str(participant.id) != str(self.user.id):
-                notification_group = f"notifications_{participant.id}"
+            notification_group = f"notifications_{participant.id}"
+            
+            print(f"[DEBUG] 🔔 Envoi à {notification_group} (participant_id: {participant.id})")
 
-                await self.channel_layer.group_send(
-                    notification_group,
-                    {
-                        "type": "new_message_notification",
-                        "conversation_id": str(conversation.id),
-                        "message_id": str(message.id),
-                        "sender_id": str(self.user.id),
-                        "content": message.content,
-                        "timestamp": message.timestamp.isoformat(),
-                        "images": message.images if hasattr(message, 'images') else []
-                    },
-                )
+            await self.channel_layer.group_send(
+                notification_group,
+                {
+                    "type": "new_message_notification",
+                    "conversation_id": str(conversation.id),
+                    "message_id": str(message.id),
+                    "sender_id": str(self.user.id),
+                    "content": message.content,
+                    "timestamp": message.timestamp.isoformat(),
+                    "images": message.images if hasattr(message, 'images') else [],
+                    "is_own_message": str(participant.id) == str(self.user.id)  # ✅ Indicateur
+                },
+            )
 
     @database_sync_to_async
     def save_message(self, sender_id, room_name, content, reply_to_id=None, images=None):
