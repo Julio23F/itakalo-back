@@ -306,6 +306,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         print(f"[DEBUG] 📢 Envoi de notifications pour le message {message.id} à TOUS les participants")
         
+        print(f"Participants {participants}")
+        
         for participant in participants:
             notification_group = f"notifications_{participant.id}"
             
