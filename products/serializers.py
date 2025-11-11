@@ -22,6 +22,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'images',
+            'ar',
             'type',
             'price',
             'category',
@@ -137,6 +138,7 @@ class ProductSerializerDetail(serializers.ModelSerializer):
             'id',
             'title',
             'images',
+            'ar',
             'type',
             'price',
             'category',
@@ -233,5 +235,5 @@ class ProductSerializerDetail(serializers.ModelSerializer):
 class ProductSuggestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ('id', 'title', 'images', 'price', 'type', 'category')
+        fields = ('id', 'title', 'images', 'ar', 'price', 'type', 'category')
 

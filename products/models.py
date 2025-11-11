@@ -37,6 +37,8 @@ class Product(models.Model):
 
     images = models.JSONField(default=list, blank=True)
 
+    ar = models.CharField(max_length=500, blank=True, null=True)
+
     mots_cles_recherches = models.JSONField(default=list, blank=True)
 
     type = models.CharField(choices=PRODUCT_TYPE, max_length=15, blank=False)
