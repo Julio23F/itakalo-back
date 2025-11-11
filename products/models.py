@@ -17,12 +17,16 @@ class Product(models.Model):
     ROBE = 'ROBE'
     CHAUSSURE = 'CHAUSSURE'
     VESTE = 'VESTE'
+    ELECTRONIQUE = 'ELECTRONIQUE'
+    ACCESSOIRES = 'ACCESSOIRES'
     PRODUCT_CATEGORY = (
         (T_SHIRT, T_SHIRT),
         (PANTALON, PANTALON),
         (ROBE, ROBE),
         (CHAUSSURE, CHAUSSURE),
-        (VESTE, VESTE)
+        (VESTE, VESTE),
+        (ELECTRONIQUE, ELECTRONIQUE),
+        (ACCESSOIRES, ACCESSOIRES)
     )
 
     title = models.CharField(max_length=128, blank=False)
