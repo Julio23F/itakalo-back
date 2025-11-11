@@ -211,12 +211,18 @@ class ProductSerializerDetail(serializers.ModelSerializer):
             raise serializers.ValidationError("Le prix ne peut pas être négatif")
         return value
 
-    def validate(self, data):
-        if data.get('type') == 'SALE' and data.get('price', 0) <= 0:
-            raise serializers.ValidationError({
-                'price': "Le prix doit être supérieur à 0 pour une vente"
-            })
+    # def validate(self, data):
+    #     if data.get('type') == 'SALE' and data.get('price', 0) <= 0:
+    #         raise serializers.ValidationError({
+    #             'price': "Le prix doit être supérieur à 0 pour une vente"
+    #         })
 
+    #     if data.get('type') == 'DONATION' and data.get('price', 0) != 0:
+    #         data['price'] = 0
+
+    #     return data
+
+    def validate(self, data):
         if data.get('type') == 'DONATION' and data.get('price', 0) != 0:
             data['price'] = 0
 
