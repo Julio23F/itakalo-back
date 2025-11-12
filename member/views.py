@@ -23,6 +23,11 @@ from utils.member_utils import generate_password, generate_api_key
 import uuid
 from django.conf import settings
 
+from .models import Preference
+from .serializers import UserPreferenceSerializer, PreferenceSerializer
+
+
+
 class MemberList(APIView):
   permission_classes = []
   # permission_classes = [IsAuthenticated]
@@ -127,3 +132,33 @@ class MemberCreate(APIView):
       return Response(new_serializer.data, status=status.HTTP_201_CREATED)
     return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+
+
+
+
+class UserPreferenceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        Ajoute ou met à jour les préférences de l'utilisateur connecté
+        """
+        serializer = UserPreferenceSerializer(data=request.data)
+        if serializer.is_valid():
+            preferences_ids = serializer.validated_data['preferences']
+            preferences = Preference.objects.filter(id__in=preferences_ids)
+
+            user = request.user  # utilisateur connecté
+            user.preferences.set(preferences)
+            user.save()
+
+            # Réponse : liste des préférences mises à jour
+            prefs_serializer = PreferenceSerializer(preferences, many=True)
+            return Response({
+                "message": "Préférences mises à jour avec succès.",
+                "preferences": prefs_serializer.data
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
