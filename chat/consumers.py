@@ -99,7 +99,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data.get("message", "")
         reply_to_id = data.get("reply_to_id")
         images_data = data.get("images", [])
-        temp_id = data.get("temp_id")  # ✅ Récupérer le temp_id
+        temp_id = data.get("temp_id")
         
         # Upload des images vers Supabase
         image_urls = []
@@ -131,7 +131,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "reactions": saved_message.reactions or {},
                 "reply_to": reply_to_data,
                 "images": image_urls,
-                "temp_id": temp_id,  # ✅ Renvoyer le temp_id
+                "temp_id": temp_id,
             },
         )
         await self.send_new_message_notification(saved_message)
@@ -197,7 +197,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         for image_data in images_data:
             try:
                 # Décoder l'image base64
-                # Format attendu: "data:image/jpeg;base64,/9j/4AAQ..."
                 if ',' in image_data:
                     image_data = image_data.split(',')[1]
                 
@@ -304,14 +303,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         conversation = await self.get_conversation(self.room_name)
         participants = await self.get_conversation_participants(conversation.id)
 
-        print(f"[DEBUG] 📢 Envoi de notifications pour le message {message.id} à TOUS les participants")
+        print(f"[DEBUG] Envoi de notifications pour le message {message.id} à TOUS les participants")
         
         print(f"Participants {participants}")
         
         for participant in participants:
             notification_group = f"notifications_{participant.id}"
             
-            print(f"[DEBUG] 🔔 Envoi à {notification_group} (participant_id: {participant.id})")
+            print(f"[DEBUG] Envoi à {notification_group} (participant_id: {participant.id})")
 
             await self.channel_layer.group_send(
                 notification_group,
@@ -323,7 +322,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "content": message.content,
                     "timestamp": message.timestamp.isoformat(),
                     "images": message.images if hasattr(message, 'images') else [],
-                    "is_own_message": str(participant.id) == str(self.user.id)  # ✅ Indicateur
+                    "is_own_message": str(participant.id) == str(self.user.id) 
                 },
             )
 
