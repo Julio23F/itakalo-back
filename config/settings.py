@@ -161,9 +161,9 @@ import os
 from supabase import create_client
 
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://gpjzgoojmpkdxmmtjmrh.supabase.co")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://sfgzdatyadzejvswfyxq.supabase.co")
 # SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5bnFkdW9iZXBhd2ppd2VtZ2JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0ODA0OTYsImV4cCI6MjA3MjA1NjQ5Nn0.V4e7_zX4RldiImMy2XnON2EYfFVgqWYTdKjdQnyVQNk")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdwanpnb29qbXBrZHhtbXRqbXJoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTM0NDcwNCwiZXhwIjoyMDcwOTIwNzA0fQ.qJaRROI6ZpAFHEU2EChgoTDCq_z4fxxCcg9wOK1w6Dc")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ3pkYXR5YWR6ZWp2c3dmeXhxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzg0OTYwMSwiZXhwIjoyMDgzNDI1NjAxfQ.mVBbFvWgDP4odT0_giwJx0hfpiqupCd8tFnlfL7tX58")
 
 SUPABASE = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -225,19 +225,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
-    # }
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': env('DATABASE_NAME', default='itrasyDB'),
-        'USER': env('DATABASE_USER_NAME', default='postgres'),
-        'PASSWORD': env('DATABASE_PASSWORD', default='0523faralahy02'),
-        'HOST': env('DATABASE_HOST', default='localhost'),
-        'PORT': env('DATABASE_PORT', default='5432'),
-        'ATOMIC_REQUESTS': True,
-    },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': env('DATABASE_NAME', default='itrasyDB'),
+    #     'USER': env('DATABASE_USER_NAME', default='postgres'),
+    #     'PASSWORD': env('DATABASE_PASSWORD', default='0523faralahy02'),
+    #     'HOST': env('DATABASE_HOST', default='localhost'),
+    #     'PORT': env('DATABASE_PORT', default='5432'),
+    #     'ATOMIC_REQUESTS': True,
+    # },
 }
 
 
